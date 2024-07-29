@@ -14,8 +14,24 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white p-4 shadow-md">
+      <header className="bg-white p-4 shadow-md flex justify-between items-center">
         <h1 className="text-xl font-bold">shopx</h1>
+        <nav>
+          <ul className="flex space-x-4">
+            <li>
+              <a href="#home" className="text-gray-700 hover:text-blue-500">Home</a>
+            </li>
+            <li>
+              <a href="#contact" className="text-gray-700 hover:text-blue-500">Contact</a>
+            </li>
+            <li>
+              <a href="#about" className="text-gray-700 hover:text-blue-500">About</a>
+            </li>
+            <li>
+              <a href="#signin" className="text-gray-700 hover:text-blue-500">Sign In</a>
+            </li>
+          </ul>
+        </nav>
       </header>
       <div className="flex-grow flex items-center justify-center">
         <div className="bg-white p-8 rounded shadow-md w-full max-w-sm">
