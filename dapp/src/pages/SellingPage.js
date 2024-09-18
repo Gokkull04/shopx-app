@@ -4,6 +4,7 @@ import { uploadFileToPinata } from "../utils/pinataUpload"; // Import Pinata upl
 
 const SellingPage = () => {
   const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
   const [price, setPrice] = useState("");
   const [pdfFile, setPdfFile] = useState(null);
   const [ipfsHash, setIpfsHash] = useState("");
@@ -25,6 +26,7 @@ const SellingPage = () => {
       // Save eBook details to local storage
       const newEbook = {
         title,
+        author,
         price,
         ipfsHash: hash,
       };
@@ -54,6 +56,19 @@ const SellingPage = () => {
               className="w-full p-2 border border-gray-300 rounded-lg"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-700 text-lg font-semibold mb-2">
+              eBook Author
+            </label>
+            <input
+              type="text"
+              className="w-full p-2 border border-gray-300 rounded-lg"
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
               required
             />
           </div>

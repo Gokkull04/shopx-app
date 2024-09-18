@@ -14,7 +14,7 @@ const ShopPage = () => {
     <div className="min-h-screen bg-gray-100">
       {/* Navbar */}
       <nav className="bg-blue-500 p-4 text-white">
-        <h1 className="text-2xl font-bold">eBook Shop</h1>
+        <h1 className="text-2xl font-bold">ShopX</h1>
       </nav>
 
       {/* eBooks Section */}
@@ -28,7 +28,7 @@ const ShopPage = () => {
             {ebooks.map((ebook, index) => (
               <div key={index} className="bg-white p-4 shadow-md rounded-lg">
                 <h3 className="text-xl font-semibold mb-2">{ebook.title}</h3>
-                <p className="text-gray-600 mb-2">Author: Unknown</p>
+                <p className="text-gray-600 mb-2">{ebook.author}</p>
                 <p className="text-gray-600 mb-4">Price: {ebook.price} USD</p>
                 <a
                   href={`https://gateway.pinata.cloud/ipfs/${ebook.ipfsHash}`}
