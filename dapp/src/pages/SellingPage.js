@@ -21,6 +21,18 @@ const SellingPage = () => {
       // Upload PDF file to Pinata
       const hash = await uploadFileToPinata(pdfFile);
       setIpfsHash(hash);
+
+      // Save eBook details to local storage
+      const newEbook = {
+        title,
+        price,
+        ipfsHash: hash,
+      };
+
+      const storedEbooks = JSON.parse(localStorage.getItem("ebooks")) || [];
+      storedEbooks.push(newEbook);
+      localStorage.setItem("ebooks", JSON.stringify(storedEbooks));
+
       alert("File uploaded successfully! IPFS Hash: " + hash);
     } catch (error) {
       alert("Error uploading file to Pinata.");
