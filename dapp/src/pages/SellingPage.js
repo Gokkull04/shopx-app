@@ -1,130 +1,101 @@
 // src/pages/SellingPage.js
 import React, { useState } from "react";
+import { uploadFileToPinata } from "../utils/pinataUpload"; // Import Pinata upload function
 
-function SellingPage() {
-  const [formData, setFormData] = useState({
-    title: "",
-    author: "",
-    price: "",
-    description: "",
-    pdfFile: null, // Adding PDF file state
-  });
+const SellingPage = () => {
+  const [title, setTitle] = useState("");
+  const [price, setPrice] = useState("");
+  const [pdfFile, setPdfFile] = useState(null);
+  const [ipfsHash, setIpfsHash] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file && file.type === "application/pdf") {
-      setFormData({
-        ...formData,
-        pdfFile: file,
-      });
-    } else {
-      alert("Please upload a valid PDF file");
-    }
-  };
-
-  const handleSubmit = (e) => {
+  // Handle form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.pdfFile) {
+    if (!pdfFile) {
       alert("Please upload a PDF file.");
       return;
     }
 
-    // Prepare form data to send
-    const formDataToSubmit = new FormData();
-    formDataToSubmit.append("title", formData.title);
-    formDataToSubmit.append("author", formData.author);
-    formDataToSubmit.append("price", formData.price);
-    formDataToSubmit.append("description", formData.description);
-    formDataToSubmit.append("pdfFile", formData.pdfFile); // Append PDF file
-
-    // You can now send formDataToSubmit to the server using fetch or axios
-    console.log(formDataToSubmit);
-    alert("eBook has been listed for sale with the PDF!");
+    try {
+      // Upload PDF file to Pinata
+      const hash = await uploadFileToPinata(pdfFile);
+      setIpfsHash(hash);
+      alert("File uploaded successfully! IPFS Hash: " + hash);
+    } catch (error) {
+      alert("Error uploading file to Pinata.");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-      <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
-        <h2 className="text-2xl font-semibold text-gray-700 mb-6">
-          Sell Your eBook
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen bg-gray-100 py-8">
+      <div className="container mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <h2 className="text-3xl font-bold mb-6">Sell Your eBook</h2>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-gray-600 mb-2">Title</label>
+            <label className="block text-gray-700 text-lg font-semibold mb-2">
+              eBook Title
+            </label>
             <input
               type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="Enter eBook title"
+              className="w-full p-2 border border-gray-300 rounded-lg"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               required
             />
           </div>
+
           <div>
-            <label className="block text-gray-600 mb-2">Author</label>
+            <label className="block text-gray-700 text-lg font-semibold mb-2">
+              Price
+            </label>
             <input
               type="text"
-              name="author"
-              value={formData.author}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="Enter author name"
+              className="w-full p-2 border border-gray-300 rounded-lg"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
               required
             />
           </div>
+
           <div>
-            <label className="block text-gray-600 mb-2">Price ($)</label>
-            <input
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="Set a price"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-gray-600 mb-2">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="Describe your eBook"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-gray-600 mb-2">Upload PDF</label>
+            <label className="block text-gray-700 text-lg font-semibold mb-2">
+              Upload eBook (PDF)
+            </label>
             <input
               type="file"
-              accept="application/pdf"
-              onChange={handleFileChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              accept=".pdf"
+              className="w-full p-2 border border-gray-300 rounded-lg"
+              onChange={(e) => setPdfFile(e.target.files[0])}
               required
             />
           </div>
+
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition duration-300"
+            className="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition duration-300"
           >
-            List eBook for Sale
+            Upload and Sell
           </button>
         </form>
+
+        {ipfsHash && (
+          <div className="mt-8 bg-gray-100 p-4 rounded-lg">
+            <p className="text-lg font-semibold">Uploaded File IPFS Hash:</p>
+            <a
+              href={`https://gateway.pinata.cloud/ipfs/${ipfsHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 underline"
+            >
+              {ipfsHash}
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
-}
+};
 
 export default SellingPage;
