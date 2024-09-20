@@ -1,49 +1,72 @@
 // src/pages/SellingPage.js
 import React, { useState } from "react";
 import { uploadFileToPinata } from "../utils/pinataUpload"; // Import Pinata upload function
+import { ToastContainer, toast } from "react-toastify"; // Import Toastify
+import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
 
 const SellingPage = () => {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [price, setPrice] = useState("");
   const [pdfFile, setPdfFile] = useState(null);
-  const [ipfsHash, setIpfsHash] = useState("");
+
+  const navigate = useNavigate();
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!pdfFile) {
-      alert("Please upload a PDF file.");
+      toast.error("Please upload a PDF file."); // Display error toast
       return;
     }
 
     try {
       // Upload PDF file to Pinata
-      const hash = await uploadFileToPinata(pdfFile);
-      setIpfsHash(hash);
+      const ipfsHash = await uploadFileToPinata(pdfFile);
+
+      // Log IPFS hash in the console
+      console.log("Uploaded IPFS Hash:", ipfsHash);
 
       // Save eBook details to local storage
       const newEbook = {
         title,
         author,
         price,
-        ipfsHash: hash,
+        ipfsHash, // Store the IPFS hash
       };
 
       const storedEbooks = JSON.parse(localStorage.getItem("ebooks")) || [];
       storedEbooks.push(newEbook);
       localStorage.setItem("ebooks", JSON.stringify(storedEbooks));
 
-      alert("File uploaded successfully! IPFS Hash: " + hash);
+      // Show success toast
+      toast.success("eBook successfully registered for selling!");
+
+      // Optionally navigate to the shop page after successful submission
+      setTimeout(() => {
+        navigate("/shop");
+      }, 2000); // Navigate after 2 seconds
     } catch (error) {
-      alert("Error uploading file to Pinata.");
+      toast.error("Error uploading file to Pinata.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      <div className="container mx-auto bg-white p-8 rounded-lg shadow-lg">
+    <div className="min-h-screen bg-gray-100">
+      {/* Navbar */}
+      <nav className="bg-blue-500 p-4 text-white flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Sell Your eBook</h1>
+        <button
+          onClick={() => navigate("/shop")}
+          className="bg-white text-blue-500 px-4 py-2 rounded-lg hover:bg-gray-200"
+        >
+          Go to Shop
+        </button>
+      </nav>
+
+      <div className="container mx-auto bg-white p-8 rounded-lg shadow-lg mt-8">
         <h2 className="text-3xl font-bold mb-6">Sell Your eBook</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -106,21 +129,10 @@ const SellingPage = () => {
             Upload and Sell
           </button>
         </form>
-
-        {ipfsHash && (
-          <div className="mt-8 bg-gray-100 p-4 rounded-lg">
-            <p className="text-lg font-semibold">Uploaded File IPFS Hash:</p>
-            <a
-              href={`https://gateway.pinata.cloud/ipfs/${ipfsHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 underline"
-            >
-              {ipfsHash}
-            </a>
-          </div>
-        )}
       </div>
+
+      {/* Toastify container for notifications */}
+      <ToastContainer />
     </div>
   );
 };
