@@ -1,10 +1,11 @@
+// src/pages/ShopPage.js
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const ShopPage = () => {
   const [ebooks, setEbooks] = useState([]);
-  const [enlargedIndex, setEnlargedIndex] = useState(null); // Track which card is enlarged
-  const [purchasedIndex, setPurchasedIndex] = useState(null); // Track which eBook is purchased
+  const [expandedCard, setExpandedCard] = useState(null); // Track which card is expanded
+  const [purchasedBooks, setPurchasedBooks] = useState([]); // Track purchased books
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,12 +24,17 @@ const ShopPage = () => {
   };
 
   const handleCardClick = (index) => {
-    setEnlargedIndex(index); // Set the clicked card to enlarged
+    setExpandedCard(expandedCard === index ? null : index); // Toggle card expansion
   };
 
-  const handleBuyNow = (index) => {
-    setPurchasedIndex(index); // Set the book as purchased
-    console.log(`Book purchased. IPFS Hash: ${ebooks[index].ipfsHash}`); // Log the IPFS hash to console
+  const handleBuyNow = (ebook) => {
+    // Simulate the purchase of the book
+    setPurchasedBooks([...purchasedBooks, ebook.ipfsHash]); // Add the purchased book's IPFS hash
+    alert(`You've successfully purchased "${ebook.title}".`);
+  };
+
+  const isBookPurchased = (ipfsHash) => {
+    return purchasedBooks.includes(ipfsHash); // Check if the book is purchased
   };
 
   return (
@@ -63,8 +69,8 @@ const ShopPage = () => {
             {ebooks.map((ebook, index) => (
               <div
                 key={index}
-                className={`bg-white p-4 shadow-md rounded-lg transition-all duration-300 ${
-                  enlargedIndex === index ? "scale-105" : ""
+                className={`bg-white p-4 shadow-md rounded-lg transition-transform duration-300 ${
+                  expandedCard === index ? "transform scale-105" : ""
                 }`}
                 onClick={() => handleCardClick(index)}
               >
@@ -72,12 +78,12 @@ const ShopPage = () => {
                 <p className="text-gray-600 mb-2">{ebook.author}</p>
                 <p className="text-gray-600 mb-4">Price: {ebook.price} USD</p>
 
-                {/* If the card is clicked, show the Buy Now button */}
-                {enlargedIndex === index && purchasedIndex === null && (
+                {/* Always display the Buy Now button */}
+                {expandedCard === index && (
                   <button
                     onClick={(e) => {
-                      e.stopPropagation();
-                      handleBuyNow(index);
+                      e.stopPropagation(); // Prevent triggering the card click
+                      handleBuyNow(ebook);
                     }}
                     className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
                   >
@@ -86,8 +92,15 @@ const ShopPage = () => {
                 )}
 
                 {/* If the book is purchased, show the IPFS link */}
-                {purchasedIndex === index && (
-                  <p className="mt-2 text-green-500">Book Purchased!</p>
+                {isBookPurchased(ebook.ipfsHash) && expandedCard === index && (
+                  <a
+                    href={`https://gateway.pinata.cloud/ipfs/${ebook.ipfsHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 underline mt-2 block"
+                  >
+                    View eBook
+                  </a>
                 )}
               </div>
             ))}
