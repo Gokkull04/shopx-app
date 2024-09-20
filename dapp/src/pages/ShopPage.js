@@ -78,8 +78,8 @@ const ShopPage = () => {
                 <p className="text-gray-600 mb-2">{ebook.author}</p>
                 <p className="text-gray-600 mb-4">Price: {ebook.price} USD</p>
 
-                {/* Always display the Buy Now button */}
-                {expandedCard === index && (
+                {/* Show Buy Now button only if the book is not purchased */}
+                {expandedCard === index && !isBookPurchased(ebook.ipfsHash) && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent triggering the card click
@@ -91,7 +91,7 @@ const ShopPage = () => {
                   </button>
                 )}
 
-                {/* If the book is purchased, show the IPFS link */}
+                {/* Show the IPFS link only if the book is purchased */}
                 {isBookPurchased(ebook.ipfsHash) && expandedCard === index && (
                   <a
                     href={`https://gateway.pinata.cloud/ipfs/${ebook.ipfsHash}`}
