@@ -1,6 +1,7 @@
 // src/pages/ShopPage.js
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Button from "../components/button";
 
 const ShopPage = () => {
   const [ebooks, setEbooks] = useState([]);
@@ -42,12 +43,7 @@ const ShopPage = () => {
       {/* Navbar */}
       <nav className="bg-blue-500 p-4 text-white flex justify-between items-center">
         <h1 className="text-2xl font-bold">ShopX</h1>
-        <button
-          onClick={handleConnectWallet}
-          className="bg-white text-blue-500 px-4 py-2 rounded-lg hover:bg-gray-200"
-        >
-          Connect Wallet
-        </button>
+        <Button />
       </nav>
 
       {/* eBooks Section */}
