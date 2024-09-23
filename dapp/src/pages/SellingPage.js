@@ -23,31 +23,55 @@ const SellingPage = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Title"
-        required
-      />
-      <input
-        type="text"
-        value={author}
-        onChange={(e) => setAuthor(e.target.value)}
-        placeholder="Author"
-        required
-      />
-      <input
-        type="number"
-        value={price}
-        onChange={(e) => setPrice(e.target.value)}
-        placeholder="Price in Wei"
-        required
-      />
-      <input type="file" onChange={handleFileChange} required />
-      <button type="submit">Upload Ebook</button>
-    </form>
+    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold text-center mb-4">Upload Ebook</h2>
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Title"
+            required
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-300"
+          />
+        </div>
+        <div className="mb-4">
+          <input
+            type="text"
+            value={author}
+            onChange={(e) => setAuthor(e.target.value)}
+            placeholder="Author"
+            required
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-300"
+          />
+        </div>
+        <div className="mb-4">
+          <input
+            type="number"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="Price in Wei"
+            required
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-300"
+          />
+        </div>
+        <div className="mb-4">
+          <input
+            type="file"
+            onChange={handleFileChange}
+            required
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none"
+          />
+        </div>
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-200"
+        >
+          Upload Ebook
+        </button>
+      </form>
+    </div>
   );
 };
 
