@@ -1,95 +1,72 @@
 import Web3 from "web3";
-import ebookABI from "./abi/abi.json";
-import { create } from "ipfs-http-client";
+import axios from "axios";
+import abi from "./abi/abi.json"; // Adjust the path if necessary
 
-// Initialize IPFS
-const ipfs = create({
-  host: "ipfs.infura.io",
-  port: "5001",
-  protocol: "https",
-});
+const contractAddress = "0xd54cb54e0daF0dB6D7d27F618e8Fd84106eaA901";
+const web3 = new Web3(window.ethereum);
+const ebookMarketplace = new web3.eth.Contract(abi, contractAddress);
 
-// Declare variables for web3 and contract
-let web3;
-let ebookContract;
+// Pinata API credentials
+const pinataApiKey = "f3843a194d7de233892f";
+const pinataApiSecret =
+  "a61050e82584b678744dafc64f2989dccca401546ac92bcdda5bc53127fcafca";
+const pinataEndpoint = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 
-// Function to initialize web3 and the contract
-export const initWeb3 = async () => {
-  try {
-    if (window.ethereum) {
-      web3 = new Web3(window.ethereum);
-      await window.ethereum.request({ method: "eth_requestAccounts" });
-    } else if (window.web3) {
-      web3 = new Web3(window.web3.currentProvider);
-    } else {
-      console.error(
-        "Non-Ethereum browser detected. You should consider using MetaMask!"
-      );
-      return;
-    }
+const uploadFileToPinata = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
 
-    // Replace with your deployed contract address
-    ebookContract = new web3.eth.Contract(ebookABI, "0xYourContractAddress");
-  } catch (error) {
-    console.error("Error initializing web3:", error);
-  }
+  const response = await axios.post(pinataEndpoint, formData, {
+    maxBodyLength: Infinity,
+    headers: {
+      pinata_api_key: pinataApiKey,
+      pinata_secret_api_key: pinataApiSecret,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return response.data.IpfsHash; // Return the IPFS hash
 };
 
-// Function to upload an eBook to IPFS
-export const uploadFileToIPFS = async (file) => {
+export const uploadEbook = async (title, author, price, file) => {
   try {
-    const added = await ipfs.add(file);
-    return added.path; // Return the IPFS hash
+    const ipfsHash = await uploadFileToPinata(file);
+    const accounts = await window.ethereum.request({
+      method: "eth_requestAccounts",
+    });
+
+    const result = await ebookMarketplace.methods
+      .uploadEbook(title, author, price, ipfsHash)
+      .send({
+        from: accounts[0],
+      });
+
+    return result;
   } catch (error) {
-    console.error("Error uploading file to IPFS:", error);
+    console.error("Error uploading ebook:", error);
     throw error;
   }
 };
 
-// Function to upload an eBook to the blockchain
-export const uploadEbook = async (title, author, price, ipfsHash) => {
-  try {
-    const accounts = await web3.eth.getAccounts();
-    await ebookContract.methods
-      .uploadEbook(title, author, web3.utils.toWei(price, "ether"), ipfsHash)
-      .send({ from: accounts[0] });
-    console.log("eBook uploaded successfully");
-  } catch (error) {
-    console.error("Error uploading eBook:", error);
-    throw error;
-  }
+export const purchaseEbook = async (ebookId) => {
+  const accounts = await window.ethereum.request({
+    method: "eth_requestAccounts",
+  });
+  const ebook = await ebookMarketplace.methods.ebooks(ebookId).call();
+  const result = await ebookMarketplace.methods.purchaseEbook(ebookId).send({
+    from: accounts[0],
+    value: ebook.price,
+  });
+
+  return result;
 };
 
-// Function to purchase an eBook
-export const purchaseEbook = async (ebookId, price) => {
-  try {
-    const accounts = await web3.eth.getAccounts();
-    await ebookContract.methods
-      .purchaseEbook(ebookId)
-      .send({ from: accounts[0], value: price });
-    console.log("eBook purchased successfully");
-  } catch (error) {
-    console.error("Error purchasing eBook:", error);
-    throw error;
-  }
+export const viewEbook = async (ebookId) => {
+  const accounts = await window.ethereum.request({
+    method: "eth_requestAccounts",
+  });
+  const ipfsHash = await ebookMarketplace.methods
+    .viewEbook(ebookId)
+    .call({ from: accounts[0] });
+  return ipfsHash;
 };
-
-// Function to get details of an eBook
-export const getEbookDetails = async (ebookId) => {
-  try {
-    const details = await ebookContract.methods.getEbookDetails(ebookId).call();
-    return {
-      title: details.title,
-      author: details.author,
-      price: details.price,
-      ipfsHash: details.ipfsHash,
-      seller: details.seller,
-    };
-  } catch (error) {
-    console.error("Error fetching eBook details:", error);
-    throw error;
-  }
-};
-
-// Export initialized web3 and ebookContract
-export { web3, ebookContract };
