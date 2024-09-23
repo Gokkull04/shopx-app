@@ -1,7 +1,7 @@
-// src/pages/ShopPage.js
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../components/button";
+import Button from "../components/Button";
+import Navbar from "../components/Navbar"; // Import the Navbar component
 
 const ShopPage = () => {
   const [ebooks, setEbooks] = useState([]);
@@ -17,11 +17,6 @@ const ShopPage = () => {
 
   const handleSellEbook = () => {
     navigate("/sell"); // Navigate to the Sell eBook form page
-  };
-
-  const handleConnectWallet = () => {
-    // Implement wallet connect logic here (like Web3 integration)
-    alert("Connect Wallet functionality coming soon!");
   };
 
   const handleCardClick = (index) => {
@@ -40,12 +35,6 @@ const ShopPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Navbar */}
-      <nav className="bg-blue-500 p-4 text-white flex justify-between items-center">
-        <h1 className="text-2xl font-bold">ShopX</h1>
-        <Button />
-      </nav>
-
       {/* eBooks Section */}
       <div className="container mx-auto py-8">
         <div className="flex justify-between items-center mb-6">
