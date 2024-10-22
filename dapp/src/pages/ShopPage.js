@@ -1,165 +1,101 @@
-import React, { useState, useEffect } from "react";
-import { purchaseEbook, viewEbook } from "../integration"; // Only import the required functions
-import Web3 from "web3";
+import React, { useEffect, useState } from "react";
+import { web3, loadEbooksFromBlockchain, purchaseEbook } from "../integration"; // Make sure paths are correct
+import { formatEther, parseEther } from "ethers"; // Adjust imports for ethers.js
 
 const ShopPage = () => {
   const [ebooks, setEbooks] = useState([]);
-  const [purchasedBooks, setPurchasedBooks] = useState([]);
-  const [account, setAccount] = useState("");
-
-  // Function to load user's purchased books when the wallet is connected
-  const loadPurchasedBooks = async (ebookMarketplace, userAccount) => {
-    try {
-      const ebookCount = await ebookMarketplace.methods.ebookCount().call();
-      let purchasedBooks = [];
-
-      // Check for each eBook if the user has purchased it
-      for (let i = 1; i <= ebookCount; i++) {
-        const isPurchased = await ebookMarketplace.methods
-          .hasPurchased(i, userAccount)
-          .call(); // Assuming 'hasPurchased' method exists
-        if (isPurchased) {
-          purchasedBooks.push(i);
-        }
-      }
-
-      setPurchasedBooks(purchasedBooks);
-    } catch (error) {
-      console.error("Error loading purchased books:", error);
-    }
-  };
-
-  // Function to load all available eBooks from the contract
-  const loadEbooks = async () => {
-    try {
-      const web3 = new Web3(window.ethereum);
-      const contractAddress = "0xd54cb54e0daF0dB6D7d27F618e8Fd84106eaA901";
-      const abi = require("../abi/abi.json"); // Assuming abi is correctly placed
-      const ebookMarketplace = new web3.eth.Contract(abi, contractAddress);
-
-      const ebookCount = await ebookMarketplace.methods.ebookCount().call();
-      let books = [];
-
-      for (let i = 1; i <= ebookCount; i++) {
-        const ebook = await ebookMarketplace.methods.ebooks(i).call();
-        books.push(ebook);
-      }
-
-      setEbooks(books);
-
-      // Load user's purchased books if account is available
-      if (account) {
-        await loadPurchasedBooks(ebookMarketplace, account);
-      }
-    } catch (error) {
-      console.error("Error loading eBooks:", error);
-    }
-  };
-
-  // Handle wallet connection and fetch the user's account
-  const connectWallet = async () => {
-    if (window.ethereum) {
-      try {
-        const web3 = new Web3(window.ethereum);
-        const accounts = await web3.eth.requestAccounts();
-        setAccount(accounts[0]); // Set the connected account
-      } catch (error) {
-        console.error("Error connecting wallet:", error);
-        alert("Failed to connect wallet.");
-      }
-    } else {
-      alert("Please install MetaMask to connect your wallet.");
-    }
-  };
+  const [account, setAccount] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (window.ethereum) {
-        try {
-          const web3 = new Web3(window.ethereum);
-          const accounts = await web3.eth.requestAccounts();
-          setAccount(accounts[0]); // Automatically set the account
+    const loadBlockchainData = async () => {
+      try {
+        // Get user's Ethereum account
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
+        setAccount(accounts[0]);
 
-          // Load eBooks and purchased books
-          await loadEbooks();
-        } catch (error) {
-          console.error("Error fetching data:", error);
-        }
-      } else {
-        alert("Please install MetaMask.");
+        // Load all eBooks from the blockchain
+        const books = await loadEbooksFromBlockchain();
+        setEbooks(books);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading blockchain data: ", error);
+        setLoading(false);
       }
     };
 
-    fetchData();
+    if (window.ethereum) {
+      loadBlockchainData();
+    } else {
+      console.error("Non-Ethereum browser detected. Install MetaMask.");
+    }
   }, []);
 
-  const handlePurchaseEbook = async (ebookId, ebookPrice) => {
+  const handlePurchase = async (ebookId, price) => {
     try {
-      await purchaseEbook(ebookId);
-      setPurchasedBooks([...purchasedBooks, ebookId]); // Mark the eBook as purchased
+      // Convert price to a string before passing to parseEther
+      const priceInWei = parseEther(price.toString()); // Ensure price is a string
+
+      // Estimate gas for the purchase transaction
+      const estimatedGas = await web3.eth.estimateGas({
+        from: account,
+        to: "0xca17FCd6Da778275A2cF72E85487005b7d6F3507", // Replace with your contract address
+        value: priceInWei,
+      });
+
+      // Calculate the gas price
+      const gasPrice = await web3.eth.getGasPrice();
+      const totalCost = priceInWei.add(estimatedGas * gasPrice); // Total cost in wei
+
+      // Get user's balance
+      const balance = await web3.eth.getBalance(account);
+      if (parseFloat(balance) < parseFloat(totalCost)) {
+        setErrorMessage(
+          "Insufficient funds to cover eBook price and gas fees."
+        );
+        return;
+      }
+
+      // Proceed with purchasing the eBook
+      await purchaseEbook(ebookId, priceInWei, account);
       alert("eBook purchased successfully!");
     } catch (error) {
-      console.error("Error purchasing eBook:", error);
-      alert("Failed to purchase eBook.");
+      console.error("Error purchasing eBook: ", error);
+      setErrorMessage("Error purchasing eBook: " + error.message);
     }
   };
 
-  const handleViewEbook = async (ebookId) => {
-    try {
-      const ipfsHash = await viewEbook(ebookId);
-      const ebookURL = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
-      window.open(ebookURL, "_blank"); // Open the eBook in a new tab
-    } catch (error) {
-      console.error("Error viewing eBook:", error);
-      alert("Failed to view eBook.");
-    }
-  };
-
-  const isEbookPurchased = (ebookId) => {
-    return purchasedBooks.includes(ebookId);
-  };
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="container mx-auto py-8">
-        <h2 className="text-2xl font-bold mb-4">Available eBooks</h2>
-
-        {ebooks.length === 0 ? (
-          <p>No eBooks available.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {ebooks.map((ebook, index) => (
-              <div
-                key={index}
-                className="bg-white p-4 shadow-md rounded-lg flex flex-col justify-between"
+    <div className="shop-page">
+      <h1 className="text-3xl font-bold mb-6">Shop eBooks</h1>
+      {errorMessage && <div className="text-red-500">{errorMessage}</div>}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {ebooks.length > 0 ? (
+          ebooks.map((ebook) => (
+            <div
+              key={ebook.id}
+              className="ebook-card bg-white p-4 shadow-md rounded-lg"
+            >
+              <h2 className="text-xl font-bold">{ebook.title}</h2>
+              <p>Author: {ebook.author}</p>
+              <p>Price: {formatEther(ebook.price)} ETH</p>
+              <button
+                className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+                onClick={() => handlePurchase(ebook.id, ebook.price)}
               >
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">{ebook.title}</h3>
-                  <p className="text-gray-600 mb-2">By: {ebook.author}</p>
-                  <p className="text-gray-600 mb-4">
-                    Price: {Web3.utils.fromWei(ebook.price, "ether")} ETH
-                  </p>
-                </div>
-
-                {/* Show Buy Now or View eBook button */}
-                {isEbookPurchased(index + 1) ? (
-                  <button
-                    onClick={() => handleViewEbook(index + 1)}
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg"
-                  >
-                    View eBook
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handlePurchaseEbook(index + 1, ebook.price)}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-                  >
-                    Buy Now
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+                Buy Now
+              </button>
+            </div>
+          ))
+        ) : (
+          <p>No eBooks available for purchase at this time.</p>
         )}
       </div>
     </div>

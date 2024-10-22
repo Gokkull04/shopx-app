@@ -2,147 +2,97 @@ import Web3 from "web3";
 import axios from "axios";
 import abi from "./abi/abi.json"; // Adjust the path if necessary
 
-// Smart contract address (Replace with your contract's address)
-const contractAddress = "0xd54cb54e0daF0dB6D7d27F618e8Fd84106eaA901";
+// Smart contract address (replace with your deployed contract's address)
+const contractAddress = "0xca17FCd6Da778275A2cF72E85487005b7d6F3507";
 
 // Create a Web3 instance connected to the user's Ethereum wallet
-const web3 = new Web3(window.ethereum);
+export const web3 = new Web3(window.ethereum); // Ensure this line exports web3
 
 // Initialize the contract with ABI and contract address
-const ebookMarketplace = new web3.eth.Contract(abi, contractAddress);
+export const ebookMarketplace = new web3.eth.Contract(abi, contractAddress);
 
 // Pinata API credentials for IPFS uploads
-const pinataApiKey = "f3843a194d7de233892f";
+const pinataApiKey = "397af0dae223c5bd028c";
 const pinataApiSecret =
-  "a61050e82584b678744dafc64f2989dccca401546ac92bcdda5bc53127fcafca";
+  "ab50151c7c15ec8b45df1d9634f7ada374feb271fa4791e17f2c4184cf39f667";
 const pinataEndpoint = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 
-/**
- * Function to upload a file to Pinata (IPFS) and return the IPFS hash
- * @param {File} file - The file to be uploaded to IPFS
- * @returns {string} - The IPFS hash of the uploaded file
- */
-const uploadFileToPinata = async (file) => {
+// Function to upload a file to Pinata
+export const uploadFileToPinata = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  try {
-    const response = await axios.post(pinataEndpoint, formData, {
-      maxBodyLength: Infinity,
-      headers: {
-        pinata_api_key: pinataApiKey,
-        pinata_secret_api_key: pinataApiSecret,
-        "Content-Type": "multipart/form-data",
-      },
-    });
+  const response = await axios.post(pinataEndpoint, formData, {
+    maxContentLength: Infinity,
+    headers: {
+      pinata_api_key: pinataApiKey,
+      pinata_secret_api_key: pinataApiSecret,
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
-    return response.data.IpfsHash; // Return the IPFS hash
-  } catch (error) {
-    console.error("Error uploading file to Pinata:", error);
-    throw error;
-  }
+  return response.data.IpfsHash; // Return the IPFS hash
 };
 
-/**
- * Function to upload an eBook to the blockchain with metadata stored on IPFS
- * @param {string} title - Title of the eBook
- * @param {string} author - Author of the eBook
- * @param {string} price - Price of the eBook in Wei (Ether unit)
- * @param {File} file - The eBook file to upload
- */
-export const uploadEbook = async (title, author, price, file) => {
-  try {
-    // Upload file to IPFS and get the hash
-    const ipfsHash = await uploadFileToPinata(file);
-
-    // Get the user's Ethereum account address
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-
-    // Upload eBook metadata to the blockchain
-    const result = await ebookMarketplace.methods
-      .uploadEbook(title, author, price, ipfsHash)
-      .send({
-        from: accounts[0],
-      });
-
-    return result; // Return the transaction result
-  } catch (error) {
-    console.error("Error uploading eBook:", error);
-    throw error;
-  }
+// Function to upload eBook metadata to the blockchain
+export const uploadEbookToBlockchain = async (title, author, price, ipfsHash, userAddress) => {
+  const result = await ebookMarketplace.methods.uploadEbook(title, author, price, ipfsHash).send({ from: userAddress });
+  return result; // Return the transaction result
 };
 
-/**
- * Function to purchase an eBook by its ID
- * @param {number} ebookId - The ID of the eBook to purchase
- */
-export const purchaseEbook = async (ebookId) => {
-  try {
-    // Get the user's Ethereum account address
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
+// Function to load eBooks from the blockchain
+export const loadEbooksFromBlockchain = async () => {
+  const ebookCount = await ebookMarketplace.methods.ebookCount().call();
+  const ebooks = [];
+
+  for (let i = 1; i <= ebookCount; i++) {
+    const ebook = await ebookMarketplace.methods.getEbookDetails(i).call();
+    ebooks.push({
+      id: i,
+      title: ebook.title,
+      author: ebook.author,
+      price: ebook.price,
     });
-
-    // Get eBook price from the contract
-    const ebook = await ebookMarketplace.methods.ebooks(ebookId).call();
-
-    // Purchase the eBook by sending the transaction
-    const result = await ebookMarketplace.methods.purchaseEbook(ebookId).send({
-      from: accounts[0],
-      value: ebook.price, // Send the amount in Wei (Ether)
-    });
-
-    return result; // Return the transaction result
-  } catch (error) {
-    console.error("Error purchasing eBook:", error);
-    throw error;
   }
+
+  return ebooks; // Return the array of eBooks
 };
 
-/**
- * Function to view an eBook by its ID (retrieves the IPFS hash)
- * @param {number} ebookId - The ID of the eBook to view
- * @returns {string} - The IPFS hash of the eBook file
- */
-export const viewEbook = async (ebookId) => {
-  try {
-    // Get the user's Ethereum account address
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
+// Function to purchase an eBook
+export const purchaseEbook = async (ebookId, price, userAddress) => {
+  const transaction = await ebookMarketplace.methods
+    .purchaseEbook(ebookId)
+    .send({ from: userAddress, value: price });
 
-    // Retrieve the IPFS hash of the eBook from the contract
-    const ipfsHash = await ebookMarketplace.methods
-      .viewEbook(ebookId)
-      .call({ from: accounts[0] });
-
-    return ipfsHash; // Return the IPFS hash of the eBook
-  } catch (error) {
-    console.error("Error viewing eBook:", error);
-    throw error;
-  }
+  return transaction; // Return the transaction details
 };
 
-/**
- * Function to get the list of available eBooks from the contract
- * @returns {Array} - The list of eBooks with their metadata
- */
-export const getEbooks = async () => {
-  try {
-    // Get the total number of eBooks available
-    const ebookCount = await ebookMarketplace.methods.ebookCount().call();
+// Function to load purchased books for a user
+export const loadPurchasedBooks = async (userAddress) => {
+  const purchasedBooks = await ebookMarketplace.methods
+    .getPurchasedBooks(userAddress)
+    .call();
+  const ebooks = [];
 
-    let books = [];
-    for (let i = 1; i <= ebookCount; i++) {
-      const ebook = await ebookMarketplace.methods.ebooks(i).call();
-      books.push(ebook);
-    }
-
-    return books; // Return the list of eBooks
-  } catch (error) {
-    console.error("Error fetching eBooks:", error);
-    throw error;
+  for (const ebookId of purchasedBooks) {
+    const ebook = await ebookMarketplace.methods
+      .getEbookDetails(ebookId)
+      .call();
+    ebooks.push({
+      id: ebookId,
+      title: ebook.title,
+      author: ebook.author,
+      price: ebook.price,
+    });
   }
+
+  return ebooks; // Return the array of purchased eBooks
+};
+
+// Function to retrieve the IPFS hash of a purchased eBook
+export const getEbookIPFSHash = async (ebookId, userAddress) => {
+  const ipfsHash = await ebookMarketplace.methods
+    .getEbookIPFSHash(ebookId)
+    .call({ from: userAddress });
+  return ipfsHash; // Return the IPFS hash
 };

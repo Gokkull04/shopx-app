@@ -1,20 +1,25 @@
+// Navbar.js
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import Button from "./Button"
+import { useAccount } from "wagmi"; // Import the useAccount hook
+import Button from "./Button"; // Adjust the import path if necessary
 
 const Navbar = () => {
-  const navigate = useNavigate();
-
-  const handleConnectWallet = () => {
-    // Implement wallet connect logic here
-    alert("Connect Wallet functionality coming soon!");
-  };
+  const { isConnected, address } = useAccount(); // Get connection status and address
 
   return (
-    <nav className="bg-blue-500 p-4 text-white flex justify-between items-center">
-      <h1 className="text-2xl font-bold">ShopX</h1>
+    <nav className="flex justify-between items-center p-4 bg-gray-800 text-white">
+      <h1 className="text-lg font-bold">eBook Marketplace</h1>
       <div className="flex items-center">
-        <Button />
+        {isConnected ? (
+          <span>
+            Connected:{" "}
+            {address
+              ? `${address.slice(0, 6)}...${address.slice(-4)}`
+              : "Unknown Address"}
+          </span>
+        ) : (
+          <Button /> // Show the ConnectButton
+        )}
       </div>
     </nav>
   );
