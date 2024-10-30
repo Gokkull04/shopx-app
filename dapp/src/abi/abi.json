@@ -9,7 +9,7 @@
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "buyer",
         "type": "address"
@@ -46,7 +46,7 @@
         "type": "uint128"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "owner",
         "type": "address"
@@ -104,74 +104,6 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "ebookPurchased",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "ebooks",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "title",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "author",
-        "type": "string"
-      },
-      {
-        "internalType": "uint128",
-        "name": "price",
-        "type": "uint128"
-      },
-      {
-        "internalType": "string",
-        "name": "ipfsHash",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "exists",
-        "type": "bool"
       }
     ],
     "stateMutability": "view",

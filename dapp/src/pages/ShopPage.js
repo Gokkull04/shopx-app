@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { web3, loadEbooksFromBlockchain, purchaseEbook } from "../integration"; // Make sure paths are correct
-import { formatEther, parseEther } from "ethers"; // Adjust imports for ethers.js
+import { loadEbooksFromBlockchain, purchaseEbook, web3 } from "../integration"; // Adjust import paths as needed
+import { formatEther, parseEther } from "ethers"; // Ensure ethers.js import is correct
 
 const ShopPage = () => {
   const [ebooks, setEbooks] = useState([]);
@@ -11,7 +11,7 @@ const ShopPage = () => {
   useEffect(() => {
     const loadBlockchainData = async () => {
       try {
-        // Get user's Ethereum account
+        // Request user's Ethereum account
         const accounts = await window.ethereum.request({
           method: "eth_requestAccounts",
         });
@@ -20,9 +20,10 @@ const ShopPage = () => {
         // Load all eBooks from the blockchain
         const books = await loadEbooksFromBlockchain();
         setEbooks(books);
-        setLoading(false);
       } catch (error) {
         console.error("Error loading blockchain data: ", error);
+        setErrorMessage("Error loading blockchain data: " + error.message);
+      } finally {
         setLoading(false);
       }
     };
@@ -30,38 +31,21 @@ const ShopPage = () => {
     if (window.ethereum) {
       loadBlockchainData();
     } else {
-      console.error("Non-Ethereum browser detected. Install MetaMask.");
+      console.error("Non-Ethereum browser detected. Please install MetaMask.");
+      setErrorMessage("Please install MetaMask to use this dApp.");
+      setLoading(false);
     }
   }, []);
 
   const handlePurchase = async (ebookId, price) => {
     try {
-      // Convert price to a string before passing to parseEther
-      const priceInWei = parseEther(price.toString()); // Ensure price is a string
-
-      // Estimate gas for the purchase transaction
-      const estimatedGas = await web3.eth.estimateGas({
-        from: account,
-        to: "0xca17FCd6Da778275A2cF72E85487005b7d6F3507", // Replace with your contract address
-        value: priceInWei,
-      });
-
-      // Calculate the gas price
-      const gasPrice = await web3.eth.getGasPrice();
-      const totalCost = priceInWei.add(estimatedGas * gasPrice); // Total cost in wei
-
-      // Get user's balance
-      const balance = await web3.eth.getBalance(account);
-      if (parseFloat(balance) < parseFloat(totalCost)) {
-        setErrorMessage(
-          "Insufficient funds to cover eBook price and gas fees."
-        );
-        return;
-      }
+      const priceInWei = parseEther(price.toString()); // Convert price to Wei
 
       // Proceed with purchasing the eBook
-      await purchaseEbook(ebookId, priceInWei, account);
-      alert("eBook purchased successfully!");
+      const transactionHash = await purchaseEbook(ebookId, priceInWei, account);
+      alert(
+        `eBook purchased successfully! Transaction Hash: ${transactionHash}`
+      );
     } catch (error) {
       console.error("Error purchasing eBook: ", error);
       setErrorMessage("Error purchasing eBook: " + error.message);

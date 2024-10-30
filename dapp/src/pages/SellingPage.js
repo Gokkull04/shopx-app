@@ -2,24 +2,22 @@ import React, { useState } from "react";
 import {
   uploadFileToPinata,
   uploadEbookToBlockchain,
-  web3, // Ensure web3 is imported here
+  web3,
 } from "../integration";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 
 const SellEbook = () => {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
-  const [price, setPrice] = useState("0.001"); // Set a lower default price in ETH
+  const [price, setPrice] = useState("0.001");
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [transactionHash, setTransactionHash] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
-
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
-    // Validate file size (max 10MB for example)
     if (selectedFile && selectedFile.size > 10 * 1024 * 1024) {
       setErrorMessage("File size must be less than 10MB.");
       setFile(null);
@@ -40,46 +38,27 @@ const SellEbook = () => {
       setUploading(true);
       setErrorMessage("");
 
-      // Upload the file to Pinata and get the IPFS hash
+      // Upload file to IPFS via Pinata
       const ipfsHash = await uploadFileToPinata(file);
       console.log("IPFS Hash:", ipfsHash);
 
-      // Get the user's Ethereum wallet address
+      // Request user's wallet address
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
       const userAddress = accounts[0];
 
-      // Estimate gas for the transaction
-      const estimatedGas = await web3.eth.estimateGas({
-        from: userAddress,
-        to: "0xca17FCd6Da778275A2cF72E85487005b7d6F3507", // Replace with your contract address
-        value: web3.utils.toWei(price, "ether"), // Amount in wei
-      });
-
-      // Calculate the gas price (optional, can be a fixed value too)
-      const gasPrice = await web3.eth.getGasPrice();
-      const totalCost = estimatedGas * gasPrice; // Total gas cost in wei
-
-      // Get user's balance
-      const balance = await web3.eth.getBalance(userAddress);
-      if (parseFloat(balance) < totalCost) {
-        setErrorMessage("Insufficient funds to cover gas fees.");
-        return;
-      }
-
       // Upload eBook metadata to the blockchain
       const result = await uploadEbookToBlockchain(
         title,
         author,
-        web3.utils.toWei(price, "ether"), // Convert price to wei
+        web3.utils.toWei(price, "ether"),
         ipfsHash,
         userAddress
       );
-      setTransactionHash(result.transactionHash);
 
-      // Redirect to the Shop page after successful upload
-      navigate("/shop"); // Change the path to your shop page
+      setTransactionHash(result.transactionHash);
+      navigate("/shop");
     } catch (error) {
       console.error("Error uploading eBook: ", error);
       setErrorMessage("Error uploading eBook: " + error.message);
@@ -155,7 +134,7 @@ const SellEbook = () => {
           <p>
             Your eBook has been uploaded. Transaction Hash:{" "}
             <a
-              href={`https://sepolia.etherscan.io/tx/${transactionHash}`} // Correct network link for Sepolia
+              href={`https://sepolia.etherscan.io/tx/${transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600"

@@ -3,10 +3,10 @@ import axios from "axios";
 import abi from "./abi/abi.json"; // Adjust the path if necessary
 
 // Smart contract address (replace with your deployed contract's address)
-const contractAddress = "0xca17FCd6Da778275A2cF72E85487005b7d6F3507";
+const contractAddress = "0xA8f5250Ad95D2Fb615CeA919eFC6dD626A341920";
 
 // Create a Web3 instance connected to the user's Ethereum wallet
-export const web3 = new Web3(window.ethereum); // Ensure this line exports web3
+export const web3 = new Web3(window.ethereum);
 
 // Initialize the contract with ABI and contract address
 export const ebookMarketplace = new web3.eth.Contract(abi, contractAddress);
@@ -35,8 +35,17 @@ export const uploadFileToPinata = async (file) => {
 };
 
 // Function to upload eBook metadata to the blockchain
-export const uploadEbookToBlockchain = async (title, author, price, ipfsHash, userAddress) => {
-  const result = await ebookMarketplace.methods.uploadEbook(title, author, price, ipfsHash).send({ from: userAddress });
+export const uploadEbookToBlockchain = async (
+  title,
+  author,
+  price,
+  ipfsHash,
+  userAddress
+) => {
+  const priceInWei = Web3.utils.toWei(price.toString(), "ether"); // Ensure price is in Wei
+  const result = await ebookMarketplace.methods
+    .uploadEbook(title, author, priceInWei, ipfsHash)
+    .send({ from: userAddress });
   return result; // Return the transaction result
 };
 
@@ -51,7 +60,8 @@ export const loadEbooksFromBlockchain = async () => {
       id: i,
       title: ebook.title,
       author: ebook.author,
-      price: ebook.price,
+      price: Web3.utils.fromWei(ebook.price, "ether"), // Convert price from Wei to Ether
+      owner: ebook.owner,
     });
   }
 
@@ -60,9 +70,10 @@ export const loadEbooksFromBlockchain = async () => {
 
 // Function to purchase an eBook
 export const purchaseEbook = async (ebookId, price, userAddress) => {
+  const priceInWei = Web3.utils.toWei(price.toString(), "ether"); // Ensure price is in Wei
   const transaction = await ebookMarketplace.methods
     .purchaseEbook(ebookId)
-    .send({ from: userAddress, value: price });
+    .send({ from: userAddress, value: priceInWei });
 
   return transaction; // Return the transaction details
 };
@@ -82,7 +93,8 @@ export const loadPurchasedBooks = async (userAddress) => {
       id: ebookId,
       title: ebook.title,
       author: ebook.author,
-      price: ebook.price,
+      price: Web3.utils.fromWei(ebook.price, "ether"), // Convert price from Wei to Ether
+      owner: ebook.owner,
     });
   }
 
